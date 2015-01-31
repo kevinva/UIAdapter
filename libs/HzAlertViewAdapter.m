@@ -47,6 +47,7 @@ static NSString * const kKeyActionNormal = @"noraml";
             HzActionType checkedType = [actionInfo[@"type"] integerValue];
             if (checkedType == type) {
                 found = YES;
+                //Only one Cancel Item or Destructive Item in alertView
                 [_actions replaceObjectAtIndex:index withObject:newActionInfo];
                 
                 break;
@@ -55,7 +56,13 @@ static NSString * const kKeyActionNormal = @"noraml";
         }
         
         if (!found) {
-            [_actions addObject:newActionInfo];
+            if (type == HzActionCancel) {
+                //Cancel Item must always be the first(index 0, the same as system).
+                [_actions insertObject:newActionInfo atIndex:0];
+            }
+            else {
+                [_actions addObject:newActionInfo];
+            }
         }
     }
     else {
@@ -148,11 +155,16 @@ static NSString * const kKeyActionNormal = @"noraml";
 #pragma mark - UIAlertViewDelegate
 
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex{
-    NSLog(@"%s, buttonIndex: %d", __FUNCTION__ ,buttonIndex);
+    //"Cancel" item is always be at the 0 index no matter which index is appended.;
+    if (buttonIndex < 0 || buttonIndex >= _actions.count) {
+        return;
+    }
     
-    //"Cancel" item is always be at the 0 index;
-    
-    
+    NSDictionary *actionInfo = (NSDictionary *)_actions[buttonIndex];
+    if (actionInfo[@"action"]) {
+        HzActionBlock action = (HzActionBlock)actionInfo[@"action"];
+        action();
+    }   
 }
 
 @end

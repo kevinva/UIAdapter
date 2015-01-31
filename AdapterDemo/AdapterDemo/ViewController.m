@@ -35,7 +35,6 @@
 
 - (IBAction)showAlertView:(id)sender {
     self.alertViewAdapter = [[HzAlertViewAdapter alloc] init];
-    [_alertViewAdapter appendItemWithType:HzActionCancel title:@"Cancel" handler:nil];
     [_alertViewAdapter appendItemWithType:HzActionNormal title:@"OK" handler:^{
         
         NSLog(@"OK clicked!");
@@ -54,6 +53,11 @@
     [_alertViewAdapter appendItemWithType:HzActionDestructive title:@"Delete" handler:^{
         
         NSLog(@"Delete clicked!");
+        
+    }];
+    [_alertViewAdapter appendItemWithType:HzActionCancel title:@"Cancel" handler:^{
+        
+        NSLog(@"Cancel clicked!");
         
     }];
 
