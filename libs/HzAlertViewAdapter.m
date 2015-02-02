@@ -25,10 +25,10 @@ static NSString * const kKeyActionNormal = @"noraml";
 #pragma mark - Public Interfaces
 
 - (void)reset{
-    self.actions = [NSMutableArray array];
+    [_actions removeAllObjects];
 }
 
-- (void)appendItemWithType:(HzActionType)type title:(NSString *)title handler:(HzActionBlock)actionHandler{
+- (void)appendItemWithType:(HzAlertViewActionType)type title:(NSString *)title handler:(HzAlertViewActionBlock)actionHandler{
     if (!_actions) {
         self.actions = [NSMutableArray array];
     }
@@ -40,11 +40,11 @@ static NSString * const kKeyActionNormal = @"noraml";
         newActionInfo[@"action"] = actionHandler;
     }
     
-    if (type == HzActionCancel || type == HzActionDestructive) {
+    if (type == HzAlertViewActionCancel || type == HzAlertViewActionDestructive) {
         NSInteger index = 0;
         BOOL found = NO;
         for (NSMutableDictionary *actionInfo in _actions) {
-            HzActionType checkedType = [actionInfo[@"type"] integerValue];
+            HzAlertViewActionType checkedType = [actionInfo[@"type"] integerValue];
             if (checkedType == type) {
                 found = YES;
                 //Only one Cancel Item or Destructive Item in alertView
@@ -56,7 +56,7 @@ static NSString * const kKeyActionNormal = @"noraml";
         }
         
         if (!found) {
-            if (type == HzActionCancel) {
+            if (type == HzAlertViewActionCancel) {
                 //Cancel Item must always be the first(index 0, the same as system).
                 [_actions insertObject:newActionInfo atIndex:0];
             }
@@ -67,8 +67,7 @@ static NSString * const kKeyActionNormal = @"noraml";
     }
     else {
         [_actions addObject:newActionInfo];
-    }
-    
+    }    
 }
 
 - (void)showInController:(UIViewController *)controller title:(NSString *)title message:(NSString *)message{
@@ -85,11 +84,11 @@ static NSString * const kKeyActionNormal = @"noraml";
                                                                          message:message
                                                                   preferredStyle:UIAlertControllerStyleAlert];
         for (NSDictionary *actionInfo in _actions) {
-            HzActionType type = [actionInfo[@"type"] integerValue];
-            if (type == HzActionCancel) {
+            HzAlertViewActionType type = [actionInfo[@"type"] integerValue];
+            if (type == HzAlertViewActionCancel) {
                 UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:actionInfo[@"title"] style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
                     
-                    HzActionBlock actionHandler = (HzActionBlock)actionInfo[@"action"];
+                    HzAlertViewActionBlock actionHandler = (HzAlertViewActionBlock)actionInfo[@"action"];
                     if (actionHandler) {
                         actionHandler();
                     }
@@ -98,10 +97,10 @@ static NSString * const kKeyActionNormal = @"noraml";
                 }];
                 [alertVC addAction:cancelAction];
             }
-            else if (type == HzActionDestructive) {
+            else if (type == HzAlertViewActionDestructive) {
                 UIAlertAction *destructiveAction = [UIAlertAction actionWithTitle:actionInfo[@"title"] style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
                     
-                    HzActionBlock actionHandler = (HzActionBlock)actionInfo[@"action"];
+                    HzAlertViewActionBlock actionHandler = (HzAlertViewActionBlock)actionInfo[@"action"];
                     if (actionHandler) {
                         actionHandler();
                     }
@@ -113,7 +112,7 @@ static NSString * const kKeyActionNormal = @"noraml";
             else {
                 UIAlertAction *normalAction = [UIAlertAction actionWithTitle:actionInfo[@"title"] style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
                     
-                    HzActionBlock actionHandler = (HzActionBlock)actionInfo[@"action"];
+                    HzAlertViewActionBlock actionHandler = (HzAlertViewActionBlock)actionInfo[@"action"];
                     if (actionHandler) {
                         actionHandler();
                     }
@@ -129,8 +128,8 @@ static NSString * const kKeyActionNormal = @"noraml";
     else {
         NSString *cancelTitle = nil;
         for (NSDictionary *actionInfo in _actions) {
-            HzActionType type = [actionInfo[@"type"] integerValue];
-            if (type == HzActionCancel) {
+            HzAlertViewActionType type = [actionInfo[@"type"] integerValue];
+            if (type == HzAlertViewActionCancel) {
                 cancelTitle = actionInfo[@"title"];
             }
         }
@@ -141,8 +140,8 @@ static NSString * const kKeyActionNormal = @"noraml";
                                                   otherButtonTitles:nil];
         
         for (NSDictionary *actionInfo in _actions) {
-            HzActionType type = [actionInfo[@"type"] integerValue];
-            if (type != HzActionCancel) {
+            HzAlertViewActionType type = [actionInfo[@"type"] integerValue];
+            if (type != HzAlertViewActionCancel) {
                 [alertView addButtonWithTitle:actionInfo[@"title"]];
             }
             
@@ -162,7 +161,7 @@ static NSString * const kKeyActionNormal = @"noraml";
     
     NSDictionary *actionInfo = (NSDictionary *)_actions[buttonIndex];
     if (actionInfo[@"action"]) {
-        HzActionBlock action = (HzActionBlock)actionInfo[@"action"];
+        HzAlertViewActionBlock action = (HzAlertViewActionBlock)actionInfo[@"action"];
         action();
     }   
 }

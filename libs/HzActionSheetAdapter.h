@@ -9,54 +9,40 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
-typedef void(^ActionBlock)(void);
+typedef NS_ENUM(NSUInteger, HzActionSheetActionType) {
+    HzActionSheetActionNormal = 0,
+    HzActionSheetActionCancel,
+    HzActionSheetActionDestructive
+};
+
+typedef void(^HzActionSheetActionBlock)(void);
 
 @interface HzActionSheetAdapter : NSObject
 
-@property (strong, nonatomic) ActionBlock destructiveHandler;
-
 /**
- *  注意：append的次数必须与OtherText的长度一致
- */
-- (void)appendAction:(ActionBlock)handler;
-
-/**
- *  清除ActionBlock列表。每次显示一次actionSheet时最后先调用一下
+ *  @brief When start showing actionSheet, it is better to call this method.
  */
 - (void)reset;
 
 /**
- *  @brief 目前在低于iOS8的版本最多只能append四个ActionBlock (deprecated)
+ *  @brief Setup up buttons item.
  *
- *  @param pController 在哪个controller显示该AlertView。（iOS8用，iOS8以下版本无效。）
- *  @param title       标题文本
- *  @param cancelText  取消按钮文本
- *  @param destructive 危险警示按钮文本
- *  @param otherText   可变长按钮文本（长度必须和append的次数一致）
+ *  @param type          Choose which button you want to add: normal, cancel or destructive.
+ *  @param title         Button title.
+ *  @param actionHandler What will happen when the button is clicked.
  */
-- (void)showInController:(UIViewController *)pController
-               withTitle:(NSString *)title
-              cancelText:(NSString *)cancelText
-         destructiveText:(NSString *)destructiveText
-             ifOtherText:(NSString *)otherText, ...;
+- (void)appendItemWithType:(HzActionSheetActionType)type title:(NSString *)title handler:(HzActionSheetActionBlock)actionHandler;
 
 /**
- *  @brief 目前在低于iOS8的版本最多只能append四个ActionBlock。
+ *  @brief Show actionSheet.
  *
- *  @param pController 在哪个controller显示该AlertView。（iOS8用，iOS8以下版本无效。）
- *  @param sourceView  从哪个sourceView弹出（iPhone版使用可留空）
- *  @param sourceRect  sourceRect的位置（在iPad版中用于popover箭头的指向）
- *  @param title       标题文本
- *  @param cancelText  取消按钮文本
- *  @param destructive 危险警示按钮文本
- *  @param otherText   可变长按钮文本（长度必须和append的次数一致）
+ *  @param controller Which controller the actionSheet present from.(Only for iOS8. At iOS7 or below, you can set this param nil.)
+ *  @param title      Title of actionSheet.
+ *  @param message    Message of actionSheet.
+ *  @param sourceView The view which the actionSheet arrow point to.(Only for iPad at iOS8, At iPhone, you may set this param nil.)
+ *  @param sourceRect Usually the sourceView position.
  */
-- (void)showInController:(UIViewController *)pController
-                  inView:(UIView *)sourceView
-                   frame:(CGRect)sourceRect
-               withTitle:(NSString *)title
-              cancelText:(NSString *)cancelText
-         destructiveText:(NSString *)destructiveText
-             ifOtherText:(NSString *)otherText, ...;
+- (void)showInController:(UIViewController *)controller title:(NSString *)title message:(NSString *)message inView:(UIView *)sourceView frame:(CGRect)sourceRect;
+
 
 @end

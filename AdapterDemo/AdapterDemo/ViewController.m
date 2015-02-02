@@ -8,10 +8,12 @@
 
 #import "ViewController.h"
 #import "HzAlertViewAdapter.h"
+#import "HzActionSheetAdapter.h"
 
 @interface ViewController ()
 
 @property (strong, nonatomic) HzAlertViewAdapter *alertViewAdapter;
+@property (strong, nonatomic) HzActionSheetAdapter *actionSheet;
 
 - (IBAction)showActionSheet:(id)sender;
 - (IBAction)showAlertView:(id)sender;
@@ -31,31 +33,54 @@
 }
 
 - (IBAction)showActionSheet:(id)sender {
+    self.actionSheet = [[HzActionSheetAdapter alloc] init];
+    [_actionSheet appendItemWithType:HzActionSheetActionNormal title:@"Camera" handler:^{
+        
+        NSLog(@"Camera clicked!");
+        
+    }];
+    [_actionSheet appendItemWithType:HzActionSheetActionNormal title:@"Album" handler:^{
+        
+        NSLog(@"Album clicked!");
+        
+    }];
+    [_actionSheet appendItemWithType:HzActionSheetActionCancel title:@"Cancel" handler:^{
+        
+        NSLog(@"Cancel clicked!");
+        
+    }];
+    [_actionSheet appendItemWithType:HzActionSheetActionDestructive title:@"Delete" handler:^{
+        
+        NSLog(@"delete clicked!");
+        
+    }];
+    [_actionSheet showInController:self title:@"Warning" message:@"Please choose..." inView:nil frame:CGRectZero];
+    
 }
 
 - (IBAction)showAlertView:(id)sender {
     self.alertViewAdapter = [[HzAlertViewAdapter alloc] init];
-    [_alertViewAdapter appendItemWithType:HzActionNormal title:@"OK" handler:^{
+    [_alertViewAdapter appendItemWithType:HzAlertViewActionNormal title:@"OK" handler:^{
         
         NSLog(@"OK clicked!");
         
     }];
-    [_alertViewAdapter appendItemWithType:HzActionNormal title:@"OK1" handler:^{
+    [_alertViewAdapter appendItemWithType:HzAlertViewActionNormal title:@"OK1" handler:^{
         
         NSLog(@"OK1 clicked!");
         
     }];
-    [_alertViewAdapter appendItemWithType:HzActionNormal title:@"OK2" handler:^{
+    [_alertViewAdapter appendItemWithType:HzAlertViewActionNormal title:@"OK2" handler:^{
         
         NSLog(@"OK2 clicked!");
         
     }];
-    [_alertViewAdapter appendItemWithType:HzActionDestructive title:@"Delete" handler:^{
+    [_alertViewAdapter appendItemWithType:HzAlertViewActionDestructive title:@"Delete" handler:^{
         
         NSLog(@"Delete clicked!");
         
     }];
-    [_alertViewAdapter appendItemWithType:HzActionCancel title:@"Cancel" handler:^{
+    [_alertViewAdapter appendItemWithType:HzAlertViewActionCancel title:@"Cancel" handler:^{
         
         NSLog(@"Cancel clicked!");
         

@@ -12,7 +12,7 @@
 
 @interface HzActionSheetAdapter () <UIActionSheetDelegate>
 
-@property (strong, nonatomic) NSMutableArray *actionList;
+@property (strong, nonatomic) NSMutableArray *actions;
 
 @end
 
@@ -21,176 +21,95 @@
 #pragma mark - Public Interfaces
 
 - (void)reset{
-    [_actionList removeAllObjects];
+    [_actions removeAllObjects];
 }
 
-- (void)appendAction:(ActionBlock)handler{
-    if (!_actionList) {
-        self.actionList = [[NSMutableArray alloc] init];
+- (void)appendItemWithType:(HzActionSheetActionType)type title:(NSString *)title handler:(HzActionSheetActionBlock)actionHandler{
+    if (!_actions) {
+        self.actions = [NSMutableArray array];
     }
-    if (handler) {
-        [_actionList addObject:handler];
-    }
-}
-
-- (void)showInController:(UIViewController *)pController withTitle:(NSString *)title cancelText:(NSString *)cancelText destructiveText:(NSString *)destructiveText ifOtherText:(NSString *)otherText, ...{
-    NSMutableArray *argsArr = [NSMutableArray array];
-    va_list params;
-    va_start(params, otherText);
-    id arg;
-    if (otherText) {
-        [argsArr addObject:otherText];
-        int i = 1;
-        while ((arg = va_arg(params, id)) != nil) {
-            if (arg) {
-                [argsArr addObject:(NSString *)arg];
-            }
-            
-            i++;
-        }
-    }
-    va_end(params);
     
-    if ([UIDevice currentDevice].systemVersion.floatValue >= 8.0) {
-        UIAlertController *controller = [UIAlertController alertControllerWithTitle:title
-                                                                            message:nil
-                                                                     preferredStyle:UIAlertControllerStyleActionSheet];
-        
-        if (cancelText && cancelText.length > 0) {
-            UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:cancelText
-                                                                   style:UIAlertActionStyleCancel
-                                                                 handler:nil];
-            [controller addAction:cancelAction];
+    NSAssert(title != nil, @"title should not be nil!");
+    
+    NSMutableDictionary *newActionInfo = [NSMutableDictionary dictionaryWithObjectsAndKeys:title, @"title", @(type), @"type", nil];
+    if (actionHandler) {
+        newActionInfo[@"action"] = actionHandler;
+    }
+    
+    if (type == HzActionSheetActionCancel || type == HzActionSheetActionDestructive) {
+        NSInteger index = 0;
+        BOOL found = NO;
+        for (NSMutableDictionary *actionInfo in _actions) {
+            HzActionSheetActionType checkedType = [actionInfo[@"type"] integerValue];
+            if (checkedType == type) {
+                found = YES;
+                //Only one Cancel Item or Destructive Item in actionSheet
+                [_actions replaceObjectAtIndex:index withObject:newActionInfo];
+                
+                break;
+            }
+            index++;
         }
         
-        if (destructiveText && destructiveText.length > 0) {
-            UIAlertAction *destructiveAction = [UIAlertAction actionWithTitle:destructiveText
-                                                                        style:UIAlertActionStyleDestructive
-                                                                      handler:^(UIAlertAction *action) {
-                                                                          
-                                                                          _destructiveHandler();
-                                                                          
-                                                                      }];
-            [controller addAction:destructiveAction];
+        if (!found) {
+//            if (type == HzActionCancel) {
+//                //Cancel Item must always be the first(index 0, the same as system).
+//                [_actions insertObject:newActionInfo atIndex:0];
+//            }
+//            else {
+                [_actions addObject:newActionInfo];
+//            }
         }
-
-        
-        for (int i = 0; i < argsArr.count; i++) {
-            NSString *buttonText = (NSString *)argsArr[i];
-            UIAlertAction *action = [UIAlertAction actionWithTitle:buttonText
-                                                             style:UIAlertActionStyleDefault
-                                                           handler:^(UIAlertAction *action) {
-                                                               
-                                                               if (_actionList.count > i) {
-                                                                   ActionBlock handler = (ActionBlock)_actionList[i];
-                                                                   handler();
-                                                               }
-                                                               
-                                                           }];
-            [controller addAction:action];
-        }
-        
-        [pController presentViewController:controller animated:YES completion:nil];
     }
     else {
-        UIActionSheet *actionSheet = nil;
-        if (argsArr.count == 1) {
-            actionSheet = [[UIActionSheet alloc] initWithTitle:title
-                                                      delegate:self
-                                             cancelButtonTitle:cancelText
-                                        destructiveButtonTitle:destructiveText
-                                             otherButtonTitles:argsArr[0], nil];
-        }
-        else if (argsArr.count == 2) {
-            actionSheet = [[UIActionSheet alloc] initWithTitle:title
-                                                      delegate:self
-                                             cancelButtonTitle:cancelText
-                                        destructiveButtonTitle:destructiveText
-                                             otherButtonTitles:argsArr[0], argsArr[1], nil];
-        }
-        else if (argsArr.count == 3) {
-            actionSheet = [[UIActionSheet alloc] initWithTitle:title
-                                                      delegate:self
-                                             cancelButtonTitle:cancelText
-                                        destructiveButtonTitle:destructiveText
-                                             otherButtonTitles:argsArr[0], argsArr[1], argsArr[2], nil];
-        }
-        else if (argsArr.count == 4) {
-            actionSheet = [[UIActionSheet alloc] initWithTitle:title
-                                                      delegate:self
-                                             cancelButtonTitle:cancelText
-                                        destructiveButtonTitle:destructiveText
-                                             otherButtonTitles:argsArr[0], argsArr[1], argsArr[2], argsArr[3], nil];
-        }
-        [actionSheet showInView:pController.view];
+        [_actions addObject:newActionInfo];
     }
 }
 
-- (void)showInController:(UIViewController *)pController
-                  inView:(UIView *)sourceView
-                   frame:(CGRect)sourceRect
-               withTitle:(NSString *)title
-              cancelText:(NSString *)cancelText
-         destructiveText:(NSString *)destructiveText
-             ifOtherText:(NSString *)otherText, ...{
-    NSMutableArray *argsArr = [NSMutableArray array];
-    va_list params;
-    va_start(params, otherText);
-    id arg;
-    if (otherText) {
-        [argsArr addObject:otherText];
-        int i = 1;
-        while ((arg = va_arg(params, id)) != nil) {
-            if (arg) {
-                [argsArr addObject:(NSString *)arg];
+- (void)showInController:(UIViewController *)controller title:(NSString *)title message:(NSString *)message inView:(UIView *)sourceView frame:(CGRect)sourceRect{
+    if (iOS8) {
+        UIAlertController *actionController = [UIAlertController alertControllerWithTitle:title
+                                                                                  message:message
+                                                                           preferredStyle:UIAlertControllerStyleActionSheet];
+        for (NSDictionary *actionInfo in _actions) {
+            HzActionSheetActionType type = [actionInfo[@"type"] integerValue];
+            if (type == HzActionSheetActionCancel) {
+                UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:actionInfo[@"title"]
+                                                                       style:UIAlertActionStyleCancel
+                                                                     handler:^(UIAlertAction *action) {
+                                                                         
+                                                                         HzActionSheetActionBlock actionHandler = (HzActionSheetActionBlock)actionInfo[@"action"];
+                                                                         actionHandler();
+                                                                         
+                                                                     }];
+                [actionController addAction:cancelAction];
             }
-            
-            i++;
-        }
-    }
-    va_end(params);
-    
-    if ([UIDevice currentDevice].systemVersion.floatValue >= 8.0) {
-        UIAlertController *controller = [UIAlertController alertControllerWithTitle:title
-                                                                            message:nil
-                                                                     preferredStyle:UIAlertControllerStyleActionSheet];
-        
-        if (cancelText && cancelText.length > 0) {
-            UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:cancelText
-                                                                   style:UIAlertActionStyleCancel
-                                                                 handler:nil];
-            [controller addAction:cancelAction];
-        }
-        
-        if (destructiveText && destructiveText.length > 0) {
-            UIAlertAction *destructiveAction = [UIAlertAction actionWithTitle:destructiveText
-                                                                        style:UIAlertActionStyleDestructive
+            else if (type == HzActionSheetActionDestructive) {
+                UIAlertAction *destructiveAction = [UIAlertAction actionWithTitle:actionInfo[@"title"]
+                                                                            style:UIAlertActionStyleDestructive
+                                                                          handler:^(UIAlertAction *action) {
+                                                                         
+                                                                              HzActionSheetActionBlock actionHandler = (HzActionSheetActionBlock)actionInfo[@"action"];
+                                                                              actionHandler();
+                                                                         
+                                                                          }];
+                [actionController addAction:destructiveAction];
+            }
+            else {
+                UIAlertAction *defaultAction = [UIAlertAction actionWithTitle:actionInfo[@"title"]
+                                                                        style:UIAlertActionStyleDefault
                                                                       handler:^(UIAlertAction *action) {
-                                                                          
-                                                                          _destructiveHandler();
-                                                                          
+                                                                              
+                                                                          HzActionSheetActionBlock actionHandler = (HzActionSheetActionBlock)actionInfo[@"action"];
+                                                                          actionHandler();
+                                                                              
                                                                       }];
-            [controller addAction:destructiveAction];
-        }
-        
-        
-        for (int i = 0; i < argsArr.count; i++) {
-            NSString *buttonText = (NSString *)argsArr[i];
-            UIAlertAction *action = [UIAlertAction actionWithTitle:buttonText
-                                                             style:UIAlertActionStyleDefault
-                                                           handler:^(UIAlertAction *action) {
-                                                               
-                                                               if (_actionList.count > i) {
-                                                                   ActionBlock handler = (ActionBlock)_actionList[i];
-                                                                   handler();
-                                                               }
-                                                               
-                                                           }];
-            [controller addAction:action];
+                [actionController addAction:defaultAction];
+            }
         }
         
         if (sourceView) {
-            UIPopoverPresentationController *popover = controller.popoverPresentationController;
+            UIPopoverPresentationController *popover = actionController.popoverPresentationController;
             if (popover) {
                 popover.sourceView = sourceView;
                 popover.sourceRect = sourceRect;
@@ -198,69 +117,48 @@
             }
         }
         
-        [pController presentViewController:controller animated:YES completion:nil];
+        [controller presentViewController:actionController animated:YES completion:nil];
     }
     else {
-        UIActionSheet *actionSheet = nil;
-        if (argsArr.count == 1) {
-            actionSheet = [[UIActionSheet alloc] initWithTitle:title
-                                                      delegate:self
-                                             cancelButtonTitle:cancelText
-                                        destructiveButtonTitle:destructiveText
-                                             otherButtonTitles:argsArr[0], nil];
+        NSString *cancelTitle = nil;
+        NSString *destructiveTitle = nil;
+        for (NSDictionary *actionInfo in _actions) {
+            HzActionSheetActionType type  = [actionInfo[@"type"] integerValue];
+            if (type == HzActionSheetActionCancel) {
+                cancelTitle = actionInfo[@"title"];
+            }
+            if (type == HzActionSheetActionDestructive) {
+                destructiveTitle = actionInfo[@"title"];
+            }
         }
-        else if (argsArr.count == 2) {
-            actionSheet = [[UIActionSheet alloc] initWithTitle:title
-                                                      delegate:self
-                                             cancelButtonTitle:cancelText
-                                        destructiveButtonTitle:destructiveText
-                                             otherButtonTitles:argsArr[0], argsArr[1], nil];
-        }
-        else if (argsArr.count == 3) {
-            actionSheet = [[UIActionSheet alloc] initWithTitle:title
-                                                      delegate:self
-                                             cancelButtonTitle:cancelText
-                                        destructiveButtonTitle:destructiveText
-                                             otherButtonTitles:argsArr[0], argsArr[1], argsArr[2], nil];
-        }
-        else if (argsArr.count == 4) {
-            actionSheet = [[UIActionSheet alloc] initWithTitle:title
-                                                      delegate:self
-                                             cancelButtonTitle:cancelText
-                                        destructiveButtonTitle:destructiveText
-                                             otherButtonTitles:argsArr[0], argsArr[1], argsArr[2], argsArr[3], nil];
+        UIActionSheet *actionSheet = [[UIActionSheet alloc] initWithTitle:title
+                                                                 delegate:self
+                                                        cancelButtonTitle:cancelTitle
+                                                   destructiveButtonTitle:destructiveTitle
+                                                        otherButtonTitles:nil];
+        for (NSDictionary *actionInfo in _actions) {
+            HzActionSheetActionType type  = [actionInfo[@"type"] integerValue];
+            if (type == HzActionSheetActionNormal) {
+                [actionSheet addButtonWithTitle:actionInfo[@"title"]];
+            }
         }
         
         if (sourceView) {
             [actionSheet showFromRect:sourceRect inView:sourceView animated:YES];
         }
         else {
-            [actionSheet showInView:pController.view];
-        }        
+            [actionSheet showInView:controller.view];
+        }
     }
 }
 
 #pragma mark - UIActionSheetDelegate
 
 - (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex{
-    if (_destructiveHandler) {
-        if (buttonIndex == 0) {
-            _destructiveHandler();
-        }
-        else {
-            if (buttonIndex - 1 < _actionList.count) {
-                ActionBlock handler = (ActionBlock)_actionList[buttonIndex - 1];
-                handler();
-            }
-        }
-        
-    }
-    else {
-        if (buttonIndex < _actionList.count) {
-            ActionBlock handler = (ActionBlock)_actionList[buttonIndex];
-            handler();
-        }
-    }
+
+#ifdef DEBUG
+    NSLog(@"%s, actions: %@, buttonIndex: %d", __FUNCTION__, _actions, buttonIndex);
+#endif
 
 }
 
