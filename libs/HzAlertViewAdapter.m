@@ -56,13 +56,7 @@ static NSString * const kKeyActionNormal = @"noraml";
         }
         
         if (!found) {
-            if (type == HzAlertViewActionCancel) {
-                //Cancel Item must always be the first(index 0, the same as system).
-                [_actions insertObject:newActionInfo atIndex:0];
-            }
-            else {
-                [_actions addObject:newActionInfo];
-            }
+            [_actions addObject:newActionInfo];
         }
     }
     else {
@@ -126,25 +120,18 @@ static NSString * const kKeyActionNormal = @"noraml";
         [controller presentViewController:alertVC animated:YES completion:nil];
     }
     else {
-        NSString *cancelTitle = nil;
-        for (NSDictionary *actionInfo in _actions) {
-            HzAlertViewActionType type = [actionInfo[@"type"] integerValue];
-            if (type == HzAlertViewActionCancel) {
-                cancelTitle = actionInfo[@"title"];
-            }
-        }
         UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:title
                                                             message:message
                                                            delegate:self
-                                                  cancelButtonTitle:cancelTitle
+                                                  cancelButtonTitle:nil
                                                   otherButtonTitles:nil];
         
         for (NSDictionary *actionInfo in _actions) {
             HzAlertViewActionType type = [actionInfo[@"type"] integerValue];
-            if (type != HzAlertViewActionCancel) {
-                [alertView addButtonWithTitle:actionInfo[@"title"]];
+            NSInteger itemIndex = [alertView addButtonWithTitle:actionInfo[@"title"]];
+            if (type == HzAlertViewActionCancel) {
+                alertView.cancelButtonIndex = itemIndex;
             }
-            
         }
         
         [alertView show];
@@ -154,10 +141,13 @@ static NSString * const kKeyActionNormal = @"noraml";
 #pragma mark - UIAlertViewDelegate
 
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex{
-    //"Cancel" item is always be at the 0 index no matter which index is appended.;
     if (buttonIndex < 0 || buttonIndex >= _actions.count) {
         return;
     }
+    
+#ifdef DEBUG
+    NSLog(@"%s, %ld", __FUNCTION__, (long)buttonIndex);
+#endif
     
     NSDictionary *actionInfo = (NSDictionary *)_actions[buttonIndex];
     if (actionInfo[@"action"]) {

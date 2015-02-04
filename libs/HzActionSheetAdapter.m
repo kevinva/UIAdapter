@@ -52,13 +52,7 @@
         }
         
         if (!found) {
-//            if (type == HzActionCancel) {
-//                //Cancel Item must always be the first(index 0, the same as system).
-//                [_actions insertObject:newActionInfo atIndex:0];
-//            }
-//            else {
-                [_actions addObject:newActionInfo];
-//            }
+            [_actions addObject:newActionInfo];
         }
     }
     else {
@@ -120,26 +114,19 @@
         [controller presentViewController:actionController animated:YES completion:nil];
     }
     else {
-        NSString *cancelTitle = nil;
-        NSString *destructiveTitle = nil;
-        for (NSDictionary *actionInfo in _actions) {
-            HzActionSheetActionType type  = [actionInfo[@"type"] integerValue];
-            if (type == HzActionSheetActionCancel) {
-                cancelTitle = actionInfo[@"title"];
-            }
-            if (type == HzActionSheetActionDestructive) {
-                destructiveTitle = actionInfo[@"title"];
-            }
-        }
         UIActionSheet *actionSheet = [[UIActionSheet alloc] initWithTitle:title
                                                                  delegate:self
-                                                        cancelButtonTitle:cancelTitle
-                                                   destructiveButtonTitle:destructiveTitle
+                                                        cancelButtonTitle:nil
+                                                   destructiveButtonTitle:nil
                                                         otherButtonTitles:nil];
         for (NSDictionary *actionInfo in _actions) {
             HzActionSheetActionType type  = [actionInfo[@"type"] integerValue];
-            if (type == HzActionSheetActionNormal) {
-                [actionSheet addButtonWithTitle:actionInfo[@"title"]];
+            NSInteger itemIndex = [actionSheet addButtonWithTitle:actionInfo[@"title"]];
+            if (type == HzActionSheetActionCancel) {
+                actionSheet.cancelButtonIndex = itemIndex;
+            }
+            else if (type == HzActionSheetActionDestructive) {
+                actionSheet.destructiveButtonIndex = itemIndex;
             }
         }
         
@@ -159,6 +146,16 @@
 #ifdef DEBUG
     NSLog(@"%s, actions: %@, buttonIndex: %d", __FUNCTION__, _actions, buttonIndex);
 #endif
+    
+    if (buttonIndex < 0 || buttonIndex >= _actions.count) {
+        return;
+    }
+    
+    NSDictionary *actionInfo = _actions[buttonIndex];
+    if (actionInfo[@"action"]) {
+        HzActionSheetActionBlock action = actionInfo[@"action"];
+        action();
+    }
 
 }
 
